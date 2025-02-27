@@ -1,7 +1,9 @@
-import pydeck
+
 import streamlit as st  
 import pandas as pd
-import pydeck as pdk
+import plotly.graph_objects as go
+import plotly.express as px
+from typing import List, Tuple
 
 # Define constants for data column and data URL
 DATA_COLUMN = "order date"
@@ -9,6 +11,7 @@ DATA_URL = "data/merchandise-sales.csv"
 
 # Function to load data with caching to improve performance
 #@st.cache
+@st.cache_resource
 def load_data(nrows):
     # Read the CSV file
     data = pd.read_csv(DATA_URL, nrows=nrows)
@@ -23,7 +26,20 @@ def load_data(nrows):
     # Replace commas with dots in latitude and longitude columns
     data['latitude'] = data['latitude'].str.replace(',', '.').astype(float)
     data['longitude'] = data['longitude'].str.replace(',', '.').astype(float)
+    qty_total_sales = data["total sales"].count()
     return data
+
+
+def set_page_config():
+    st.set_page_config(
+        page_title="Sales Dashboard",
+        page_icon=":bar_chart:",
+        layout="wide",
+        initial_sidebar_state="expanded",
+    )
+    st.markdown("<style> footer {visibility: hidden;} </style>", unsafe_allow_html=True)
+set_page_config()
+
 
 # Load data with a limit of 1000 rows
 df = load_data(5000)
@@ -37,6 +53,44 @@ labelsprod = df['product'].unique().tolist()
 labelsgend = df["gender"].unique().tolist()
 
 labelscat = df["category"].unique().tolist()
+
+
+
+#KPISSSSSSSSSSSSSSSSSSSSSSSS
+# Calculate total sales
+total_sales = df["total sales"].sum()
+# Calculate total international sales
+total_international_sales = df[df["international shipping"] == "Yes"]["total sales"].sum()
+# Calculate total national sales
+total_national_sales = df[df["international shipping"] == "No"]["total sales"].sum()
+# Calculate quantity of international sales
+total_international_shipping = df[df["international shipping"] == "Yes"]["international shipping"].count()
+# Calculate quantity of national sales
+total_national_shipping = df[df["international shipping"] == "No"]["international shipping"].count()
+
+# Define KPI values and names
+kpis = [
+    (f"${total_sales:,.2f}", "5%"),
+    (f"${total_international_sales:,.2f}", "-4%"),
+    (f"${total_national_sales:,.2f}", "7%"),
+    (total_international_shipping, "-3%"),
+    (total_national_shipping, "4%")
+]
+kpi_names = [
+    "Total Sales",
+    "Total International Sales",
+    "Total National Sales",
+    "Qty International Sales",
+    "Qty National Sales"
+]
+
+def display_kpi_metrics(kpis: List[Tuple[str, str]], kpi_names: List[str]):
+    st.header("KPI Metrics")
+    for i, (col, (kpi_name, (kpi_value, delta))) in enumerate(zip(st.columns(5), zip(kpi_names, kpis))):
+        col.metric(label=kpi_name, value=kpi_value, delta=delta)
+
+# Display KPI metrics
+display_kpi_metrics(kpis, kpi_names)
 
 
 
@@ -57,24 +111,14 @@ year_filter = st.sidebar.slider("Year", 2023, 2024, 2024)
 st.sidebar.title("Buyer Age")
 age_filter = st.sidebar.slider("Age", 18, 35)
 
-# Display quantity of total sales
-#st.subheader(f"Qty Sales: ${qty_total_sales:}")
-
-#agemax = df["age"].max()
-#agemin = df["age"].min()
-#ageavg = int(df["age"].mean())
-#age_filter = st.sidebar.slider("Age", agemin, agemax, ageavg)
-
 # Product filter
 # Product filter
-label_prod = st.sidebar.multiselect("Product", labelsprod, default=["BF1548"])
+label_prod = st.sidebar.multiselect("Product", labelsprod, default=labelsprod)
+label_cat = st.sidebar.multiselect("Category", labelscat, default=labelscat)
+label_gen = st.sidebar.multiselect("Gender", labelsgend, default=labelsgend)
 
 # Location filter
-label_filter = st.sidebar.multiselect("Location", labels, default=["Sydney", "Toronto"])
-
-label_cat = st.sidebar.multiselect("Category", labelscat, default=labelscat)
-
-label_gen = st.sidebar.multiselect("Gender", labelsgend, default=labelsgend)
+label_filter = st.sidebar.multiselect("Location", labels, default=labels)
 
 # Filter the dataframe based on the selected year, products, and locations
 filtered_df = df[(df[DATA_COLUMN].dt.year == year_filter) & 
@@ -115,33 +159,10 @@ if table.checkbox("Show Raw Data"):
 
 #map
 st.subheader("Sales Map")  
-
-st.pydeck_chart(pdk.Deck(
-    map_style='mapbox://styles/mapbox/light-v9',
-    initial_view_state=pdk.ViewState(
-        latitude=36.18811,
-        longitude=-115.176468,
-        zoom=1,
-        pitch=50,
-    ),
-    layers=[
-        pdk.Layer(
-            'HexagonLayer',
-            data=filtered_df,
-            get_position='[longitude, latitude]',
-            radius=1000,
-            get_fill_color=[255, 140, 0, 140],
-            get_line_color=[0, 0, 0],
-            auto_highlight=True,
-            elevation_scale=4,
-            elevation_range=[0, 1000],
-            pickable=True,
-            extruded=True,
-        ),
-    ],
-))
+# Create a scatter plot of the filtered dataframe
+fig = px.scatter_geo(filtered_df, lat="latitude", lon="longitude", color="total sales", 
+                     hover_name="location", size="total sales", 
+                     projection="natural earth", title="Qty of Sales by Location")
+st.plotly_chart(fig)
 
 
-
-
-st.map(filtered_df)
