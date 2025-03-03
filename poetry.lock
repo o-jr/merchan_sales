@@ -212,6 +212,17 @@ files = [
 ]
 
 [[package]]
+name = "display"
+version = "1.0.0"
+description = "simple printer of nested list"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "display-1.0.0.tar.gz", hash = "sha256:899b28eb6b2e9609b04c2961d1af8b2695b04eb48c24b40cc73bf1bd4d59d4bc"},
+]
+
+[[package]]
 name = "duckdb"
 version = "1.2.0"
 description = "DuckDB in-process database"
@@ -1441,4 +1452,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13"
-content-hash = "d6e126fd42037ed421243173c0ab80f9c52ba16749944c2cf2aaf07d6891be45"
+content-hash = "2488297a8b6d58b6a22a2ad3140dc99565594d90bdf963d771ddef6c29121c2b"

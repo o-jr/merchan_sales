@@ -1,4 +1,4 @@
-import duckdb
+import db.duckdb as duckdb
 import time
 
 
@@ -8,12 +8,12 @@ def conectar_banco():
 
 def create_duckdb():
     con = duckdb.DuckDBPyConnection()
-    con.execute("""
+    con.sql("""
         SELECT OrderID, ProductID, SUM(Quantity) AS total_quantity
         FROM read_csv("data/merchandise-sales.csv", AUTO_DETECT=FALSE, sep=',', columns={'OrderID': 'INTEGER', 'ProductID': 'INTEGER', 'Quantity': 'INTEGER'})
         GROUP BY OrderID, ProductID
         ORDER BY total_quantity DESC
-    """).fetchdf().show()
+    """).fetchdf()
 
 if __name__ == "__main__":
     import time
